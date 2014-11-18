@@ -1,9 +1,9 @@
-var AsyncStore = require('../lib/AsyncStore');
+var AsyncStore = require('./store/AsyncStore');
 
 module.exports = SRef;
 
-function SRef(url, store) {
-	this.url = url;
+function SRef(uri, store) {
+	this.uri = uri;
 	this.state = AsyncStore.from(store);
 }
 

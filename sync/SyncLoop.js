@@ -72,7 +72,7 @@ SyncLoop.prototype._updatePatches = function(shadow, state) {
 };
 
 SyncLoop.prototype._sendNext = function(state) {
-	return this.send(this.sref.url, state.patches);
+	return this.send(this.sref.uri, state.patches);
 };
 
 SyncLoop.prototype._handleReturnPatch = function(incomingPatches) {
