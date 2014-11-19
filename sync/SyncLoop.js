@@ -1,4 +1,5 @@
 var when = require('when');
+var syncState = require('./syncState');
 
 module.exports = SyncLoop;
 
@@ -54,17 +55,7 @@ SyncLoop.prototype._updatePatches = function(shadow, state) {
 		this.shadow = state.data;
 
 		sref.state = sref.state.map(function (state) {
-			var version = state.version + 1;
-			return {
-				data: state.data,
-				version: version,
-				remoteVersion: state.remoteVersion,
-				patches: state.patches.concat({
-					patch: patch,
-					localVersion: version,
-					remoteVersion: state.remoteVersion
-				})
-			};
+			return syncState.append(patch, state);
 		});
 	}
 
@@ -72,7 +63,7 @@ SyncLoop.prototype._updatePatches = function(shadow, state) {
 };
 
 SyncLoop.prototype._sendNext = function(state) {
-	return this.send(this.sref.uri, state.patches);
+	return this.send(state.patches);
 };
 
 SyncLoop.prototype._handleReturnPatch = function(incomingPatches) {
@@ -82,8 +73,6 @@ SyncLoop.prototype._handleReturnPatch = function(incomingPatches) {
 	sref.state = sref.state.map(function(state) {
 		return self._updateFromRemote(incomingPatches, state);
 	});
-
-	//return sref.state.get();
 };
 
 SyncLoop.prototype._updateFromRemote = function(incomingPatches, state) {
@@ -92,36 +81,26 @@ SyncLoop.prototype._updateFromRemote = function(incomingPatches, state) {
 	}
 
 	var updated = this._updateShadowAndData(incomingPatches, state);
-	return prunePatches(updated.remoteVersion, updated);
+	return syncState.trim(updated.remoteVersion, updated);
 };
 
 SyncLoop.prototype._updateShadowAndData = function(incomingPatches, state) {
 	var patchStrategy = this.patchStrategy;
+	var newState = state;
 	this.shadow = incomingPatches.reduce(function (shadow, patch) {
 		// Only apply patches for versions larger than the current
-		if (patch.localVersion <= state.remoteVersion) {
+		if (patch.version <= state.remoteVersion) {
 			return shadow;
 		}
 
 		// Patch both the shadow and the data
-		shadow = patchStrategy.patch(patch.patch, shadow);
-		state.data = patchStrategy.patch(patch.patch, state.data);
-		state.remoteVersion = patch.localVersion;
+		var newShadow = patchStrategy.patch(patch.patch, shadow);
+		var newData = patchStrategy.patch(patch.patch, state.data);
+		newState = syncState.update(patch.version, newData);
 
-		return shadow;
+		return newShadow;
 
 	}, this.shadow);
 
-	return state;
+	return newState;
 };
-
-function prunePatches (remoteVersion, state) {
-	return {
-		data: state.data,
-		version: state.version,
-		remoteVersion: state.remoteVersion,
-		patches: state.patches.filter(function (patch) {
-			return patch.remoteVersion > remoteVersion;
-		})
-	};
-}

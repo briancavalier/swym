@@ -1,14 +1,13 @@
-var AsyncStore = require('./store/AsyncStore');
+var syncState = require('./sync/syncState');
 
 module.exports = SRef;
 
-function SRef(uri, store) {
-	this.uri = uri;
-	this.state = AsyncStore.from(store);
+function SRef(store) {
+	this.state = store;
 }
 
 SRef.prototype.get = function() {
-	return this.state.get().then(getData);
+	return this.state.get().then(syncState.getData);
 };
 
 SRef.prototype.set = function(data) {
@@ -19,16 +18,8 @@ SRef.prototype.set = function(data) {
 
 SRef.prototype.map = function(f) {
 	this.state = this.state.map(function(state) {
-		return {
-			version: state.version,
-			remoteVersion: state.remoteVersion,
-			patches: state.patches,
-			data: f(state.data)
-		};
+		return syncState.map(f, state);
 	});
 	return this;
 };
 
-function getData(state) {
-	return state.data;
-}
