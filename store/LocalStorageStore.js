@@ -1,31 +1,22 @@
 module.exports = LocalStorageStore;
 
-function LocalStorageStore(data, key, localStorage) {
-	this.data = data;
+function LocalStorageStore(key, localStorage) {
 	this.key = key;
 	this.localStorage = localStorage;
 }
 
 LocalStorageStore.at = function(key) {
-	return new LocalStorageStore(void 0, key, localStorage);
+	return new LocalStorageStore(key, localStorage);
 };
 
 LocalStorageStore.prototype.get = function() {
-	if(this.data === void 0) {
-		var data = this.localStorage.getItem(this.key);
-		if(data == null) {
-			return data;
-		}
-
-		return this.data = JSON.parse(data);
-	}
-
-	return this.data;
+	var data = this.localStorage.getItem(this.key);
+	return data == null ? data : JSON.parse(data);
 };
 
 LocalStorageStore.prototype.set = function(data) {
 	this.localStorage.setItem(this.key, JSON.stringify(data));
-	return new LocalStorageStore(data, this.key, this.localStorage);
+	return new LocalStorageStore(this.key, this.localStorage);
 };
 
 LocalStorageStore.prototype.map = function(f) {
