@@ -28,9 +28,9 @@ SyncLoop.prototype._run = function() {
 		return;
 	}
 
-	when(this.sref.state.get()).with(this)
-		.fold(this._updatePatches, this.shadow)
-		.then(this._sendNext)
+	var state = this._updatePatches(this.shadow, this.sref.store.get());
+
+	when(this._sendNext(state)).with(this)
 		.then(this._handleReturnPatch)
 		.then(function() {
 			this._errors = 0;
@@ -54,12 +54,12 @@ SyncLoop.prototype._updatePatches = function(shadow, state) {
 	if (patch.length > 0) {
 		this.shadow = state.data;
 
-		sref.state = sref.state.map(function (state) {
+		sref.store = sref.store.map(function (state) {
 			return syncState.append(patch, state);
 		});
 	}
 
-	return sref.state.get();
+	return sref.store.get();
 };
 
 SyncLoop.prototype._sendNext = function(state) {
@@ -68,9 +68,7 @@ SyncLoop.prototype._sendNext = function(state) {
 
 SyncLoop.prototype._handleReturnPatch = function(incomingPatches) {
 	var self = this;
-	var sref = this.sref;
-
-	sref.state = sref.state.map(function(state) {
+	this.sref.store = this.sref.store.map(function(state) {
 		return self._updateFromRemote(incomingPatches, state);
 	});
 };
@@ -96,7 +94,7 @@ SyncLoop.prototype._updateShadowAndData = function(incomingPatches, state) {
 		// Patch both the shadow and the data
 		var newShadow = patchStrategy.patch(patch.patch, shadow);
 		var newData = patchStrategy.patch(patch.patch, state.data);
-		newState = syncState.update(patch.version, newData);
+		newState = syncState.update(patch.version, newData, state);
 
 		return newShadow;
 

@@ -5,7 +5,7 @@ module.exports = SyncStrategy;
 
 function SyncStrategy(patchStrategy, loopStrategy) {
 	this.patchStrategy = patchStrategy;
-	this.loopStrategy = loopStrategy || new SimpleLoopStrategy(1000, 8);
+	this.loopStrategy = loopStrategy || new SimpleLoopStrategy(2000, 8);
 }
 
 SyncStrategy.prototype.sync = function(send, sref) {
